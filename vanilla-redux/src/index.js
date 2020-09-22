@@ -1,90 +1,78 @@
-import { createStore } from "redux";
+import {createStore} from "redux";
 
+const form = document.querySelector("form");
+const input = document.querySelector("input");
+const ul = document.querySelector("ul");
 
-const add = document.getElementById("add");
-const minus = document.getElementById("minus");
-const number = document.querySelector("span");
+const ADD_TODO = "ADD_TODO";
+const DELETE_TODO = "DELETE_TODO";
 
-const ADD = "ADD";
-const MINUS = "MINUS";
+const addToDo = text => {
+    return {
+        type: ADD_TODO, 
+        text
+    }
+}
+const deleteToDo = id => {
+    return {
+        type: DELETE_TODO,
+        id
+    }
+}
 
-const countModifier = (count = 0, action) => {
-  //state = 0 : initializing state
-  switch (action.type) {
-    case ADD:
-      return count + 1;
-    case MINUS:
-      return count - 1;
-    default:
-      return count;
-  }
- 
-  // if (action.type === "ADD") { 
-  //   console.log(count, action);
-  //   return count + 1;
-  // } else if (action.type === "MINUS") {
-  //   console.log(count, action);
-  //   return count - 1;
-  // } else {
-  //   return count;
-  // }
-};
-const countStore = createStore(countModifier);
-
-const onChange = () => {
-  number.innerText = countStore.getState();
+const reducer = (state = [], action) => {
+    switch(action.type) {
+        case ADD_TODO:
+            return [...state, {text: action.text, id: Date.now()}]; //return state.push(action.text); !!Wrong!! push하면 mutate가 생김!!, ...state: 과거의 state
+            //반드시 새로운 array object를 리턴해야지 원래의 state를 변형시키면 안됨.
+        case DELETE_TODO:
+            return state.filter(toDo => toDo.id !==action.id);
+        default:
+            return state;
+    }
 };
 
-countStore.subscribe(onChange);
+const store = createStore(reducer);
 
-const handleAdd = () => {
-  countStore.dispatch({type: ADD}); //must to be object!
+const dispatchAddToDo = text => {
+    store.dispatch(addToDo(text));
 }
-const handleMinus = () => {
-  countStore.dispatch({type: MINUS}); //string을 쓰는건 자바에서 고쳐주지 못한다. ㅜㅜ 그래서 MINUS로
+
+const dispatchDeleteToDo = e => {
+    const id = parseInt(e.target.parentNode.id);
+    store.dispatch(deleteToDo(id));
 }
-add.addEventListener("click", handleAdd);
-minus.addEventListener("click", handleMinus);
 
-// add.addEventListener("Click ", () => countStore.dispatch({type: "ADD"}));
-// minus.addEventListener("Click ", () => countStore.dispatch({type: "MINUS"}));
-
-// countStore.dispatch({ type: "ADD" }); //dispatch(action)을 호출하면 reducer(countModifier)를 호출
-// countStore.dispatch({ type: "MINUS" });
-// countStore.dispatch({ type: "MINUS" });
-// countStore.dispatch({ type: "ADD" });
-
-// console.log(countStore.getState());
-// const reducer = () => {};
-// const store = createStore(reducer);
-// //store를 만들면 reducer(data를 수정하는 함수)를 만들어줘야 한다.
-
-
-// //////////////1번째 방법
-// let count = 0;
-
-// const update = () => {
-//   number.innerText = count;
-// }
-// const handleAdd = () => {
-//   count = count + 1;
-//   update();
-// }
-// const handleMinus = () => {
-//   count = count - 1;
-//   update();
-// }
+const paintToDos = () => {
+    const toDos = store.getState();
+    ul.innerHTML = "";
+    toDos.forEach(toDo => {
+        const li =document.createElement("li");
+        const btn = document.createElement("button");
+        btn.innerText = "DEL";
+        btn.addEventListener("click", dispatchDeleteToDo);
+        li.id = toDo.id;
+        li.innerText = toDo.text;
+        li.appendChild(btn);
+        ul.appendChild(li);
+    })
+}
 
 
+store.subscribe(paintToDos);
 
-///////////////2번째 방법/////////////
-// let count = 0;
-// const handleAdd = () => {
-//   number.innerText = count ++;
-// }
-// const handleMinus = () => {
-//   number.innerText = count --;
-// }
-/////////////////////////////////////
-// add.addEventListener("click",handleAdd);
-// minus.addEventListener("click",handleMinus);
+// const createToDo = toDo => {
+//     const li= document.createElement("li");
+//     li.innerText = toDo;
+//     ul.appendChild(li);
+// };
+
+const onSubmit = e => {
+    e.preventDefault();
+    const toDo = input.value;
+    input.value = "";
+    // createToDo(toDo);
+    dispatchAddToDo(toDo);
+};
+
+form.addEventListener("submit", onSubmit);
